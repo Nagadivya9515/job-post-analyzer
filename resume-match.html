@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Matcher - Job Post Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- PDF.js for PDF extraction -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.js"></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        .slide-up {
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { 
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to { 
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .progress-animate {
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 min-h-screen">
+    
+    <!-- Header with Navigation -->
+    <header class="bg-gradient-to-r from-purple-600 to-indigo-600 shadow-lg">
+        <div class="max-w-5xl mx-auto px-4 py-8">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-file-alt text-4xl text-white"></i>
+                    <h1 class="text-3xl font-bold text-white">Resume Matcher</h1>
+                </div>
+                <a href="index.html" class="bg-white text-purple-600 px-4 py-2 rounded-lg font-bold hover:bg-purple-50 transition">
+                    <i class="fas fa-arrow-left"></i> Job Analyzer
+                </a>
+            </div>
+            <p class="text-purple-100">Upload your resume and compare it with job descriptions to see your match score</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-4 py-12">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Input Section -->
+            <div class="bg-white rounded-2xl shadow-2xl p-8 slide-up">
+                <h2 class="text-2xl font-bold text-gray-800 mb-8">
+                    <i class="fas fa-cog text-purple-600"></i> Resume Analysis Setup
+                </h2>
+
+                <!-- Resume Upload -->
+                <div class="mb-8">
+                    <label class="block text-lg font-semibold text-gray-700 mb-4">
+                        <i class="fas fa-file-pdf text-purple-600"></i> Upload Your Resume
+                    </label>
+                    <div class="relative border-3 border-dashed border-purple-300 rounded-xl p-8 text-center hover:border-purple-500 transition cursor-pointer bg-purple-50" id="dropZone">
+                        <input
+                            type="file"
+                            id="resumeInput"
+                            accept=".pdf,.txt,.docx"
+                            class="hidden"
+                            onchange="handleResumeUpload()"
+                        />
+                        <label for="resumeInput" class="cursor-pointer">
+                            <i class="fas fa-cloud-upload-alt text-5xl text-purple-400 mb-4 block"></i>
+                            <p class="text-lg font-semibold text-gray-700 mb-2">Drag & drop your resume or click to browse</p>
+                            <p class="text-sm text-gray-500">Supported formats: PDF, TXT</p>
+                        </label>
+                    </div>
+                    <div id="resumeStatus" class="mt-4 text-sm"></div>
+                </div>
+
+                <!-- Job Description Input -->
+                <div>
+                    <label class="block text-lg font-semibold text-gray-700 mb-4">
+                        <i class="fas fa-briefcase text-purple-600"></i> Job Description
+                    </label>
+                    <textarea
+                        id="jobDesc"
+                        placeholder="Paste the job description here..."
+                        class="w-full p-4 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none transition min-h-64 font-mono text-sm resize-none"
+                    ></textarea>
+                </div>
+
+                <!-- Analyze Button -->
+                <button
+                    onclick="analyzeResume()"
+                    class="w-full mt-8 py-4 text-lg font-bold rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg hover:scale-105 transition transform"
+                >
+                    <i class="fas fa-bolt"></i> Analyze Resume Match
+                </button>
+            </div>
+
+            <!-- Tips Section -->
+            <div class="bg-white rounded-2xl shadow-2xl p-8 slide-up">
+                <h3 class="text-2xl font-bold text-gray-800 mb-6">
+                    <i class="fas fa-lightbulb text-yellow-500"></i> How It Works
+                </h3>
+                
+                <div class="space-y-6">
+                    <div class="flex gap-4">
+                        <div class="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                            <span class="font-bold text-purple-600">1</span>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">Upload Your Resume</h4>
+                            <p class="text-sm text-gray-600">Upload a PDF or TXT file. Your resume is processed in your browser and never sent anywhere.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <div class="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                            <span class="font-bold text-purple-600">2</span>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">Paste Job Description</h4>
+                            <p class="text-sm text-gray-600">Copy and paste the full job description from the job posting.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <div class="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                            <span class="font-bold text-purple-600">3</span>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">Get Match Score</h4>
+                            <p class="text-sm text-gray-600">See which skills in the job description are present in your resume.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <div class="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                            <span class="font-bold text-purple-600">4</span>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">Improve Your Resume</h4>
+                            <p class="text-sm text-gray-600">Add missing skills to your resume to increase your match score.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skills Database Info -->
+                <div class="mt-8 p-4 bg-purple-50 border-l-4 border-purple-500 rounded">
+                    <p class="text-sm text-gray-700">
+                        <i class="fas fa-info-circle text-purple-600"></i>
+                        <strong>Skills Database:</strong> The analyzer recognizes 100+ technical skills across Backend, Frontend, Database, DevOps, Cloud, and Testing categories.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="mt-12 hidden"></div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-purple-900 text-purple-200 text-center py-6 mt-12">
+        <p>© 2024 Job Post Analyzer | Resume data is never stored or sent to any server</p>
+    </footer>
+
+    <script src="resume-logic.js"></script>
+</body>
+</html>
