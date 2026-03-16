@@ -16,14 +16,43 @@ const TECH_KEYWORDS = {
 // ============================================
 // GLOBAL STATE
 // ============================================
-let resumeText = null;
+let resumeText = null;           // Filled by file upload
 let resumeFileName = null;
-let resumeFileSize = null;
+let pastedResumeText = null;     // Filled by textarea paste
+let currentTab = 'upload';
 
 // ============================================
-// DRAG & DROP SUPPORT
+// TAB SWITCHING
 // ============================================
-const dropZone = document.getElementById('dropZone');
+function switchResumeTab(tab) {
+  currentTab = tab;
+  
+  const uploadSection = document.getElementById('uploadSection');
+  const pasteSection = document.getElementById('pasteSection');
+  const uploadTab = document.getElementById('uploadTab');
+  const pasteTab = document.getElementById('pasteTab');
+
+  if (tab === 'upload') {
+    uploadSection.classList.remove('hidden');
+    pasteSection.classList.add('hidden');
+    uploadTab.classList.add('bg-purple-600', 'text-white');
+    uploadTab.classList.remove('bg-gray-300', 'text-gray-700');
+    pasteTab.classList.remove('bg-purple-600', 'text-white');
+    pasteTab.classList.add('bg-gray-300', 'text-gray-700');
+  } else {
+    uploadSection.classList.add('hidden');
+    pasteSection.classList.remove('hidden');
+    pasteTab.classList.add('bg-purple-600', 'text-white');
+    pasteTab.classList.remove('bg-gray-300', 'text-gray-700');
+    uploadTab.classList.remove('bg-purple-600', 'text-white');
+    uploadTab.classList.add('bg-gray-300', 'text-gray-700');
+  }
+}
+
+// ============================================
+// DRAG & DROP SUPPORT FOR UPLOAD
+// ============================================
+const dropZone = document.querySelector('label[for="resumeInput"]').parentElement;
 
 dropZone.addEventListener('dragover', (e) => {
   e.preventDefault();
@@ -40,12 +69,12 @@ dropZone.addEventListener('drop', (e) => {
   const files = e.dataTransfer.files;
   if (files.length > 0) {
     document.getElementById('resumeInput').files = files;
-    handleResumeUpload.call({ files: files[0] });
+    handleResumeUpload();
   }
 });
 
 // ============================================
-// RESUME UPLOAD HANDLER
+// RESUME UPLOAD HANDLER (PDF or TXT)
 // ============================================
 function handleResumeUpload() {
   const input = document.getElementById('resumeInput');
@@ -57,53 +86,80 @@ function handleResumeUpload() {
   }
 
   resumeFileName = file.name;
-  resumeFileSize = (file.size / 1024).toFixed(2);
+  const fileSize = (file.size / 1024).toFixed(2);
   const ext = file.name.split('.').pop().toLowerCase();
 
   const statusDiv = document.getElementById('resumeStatus');
 
   if (ext === 'txt') {
-    // TXT File Handler
+    // ===== TXT FILE HANDLER =====
     const reader = new FileReader();
     reader.onload = function(e) {
       resumeText = e.target.result;
-      showSuccess(`${file.name} (${resumeFileSize} KB)`);
+      pastedResumeText = null; // Upload takes priority
+      showSuccess(`${file.name} (${fileSize} KB)`);
     };
     reader.onerror = function() {
-      showError('Failed to read TXT file');
+      showError('Failed to read TXT file. Please try again or paste text instead.');
     };
     reader.readAsText(file);
   } else if (ext === 'pdf') {
-    // PDF File Handler using pdf.js
+    // ===== PDF FILE HANDLER USING PDF.JS =====
     const reader = new FileReader();
     reader.onload = function(e) {
       const typedarray = new Uint8Array(e.target.result);
-      pdfjsLib.getDocument({ data: typedarray }).promise.then(pdf => {
-        let textPromises = [];
-        for (let i = 1; i <= pdf.numPages; i++) {
-          textPromises.push(
-            pdf.getPage(i).then(page => page.getTextContent())
-          );
+      
+      pdfjsLib.getDocument({ data: typedarray }).promise.then(
+        function(pdf) {
+          let textPromises = [];
+          for (let i = 1; i <= pdf.numPages; i++) {
+            textPromises.push(
+              pdf.getPage(i).then(page => page.getTextContent())
+            );
+          }
+          Promise.all(textPromises).then(pages => {
+            resumeText = pages.flatMap(content =>
+              content.items.map(item => item.str)
+            ).join(' ');
+            pastedResumeText = null; // Upload takes priority
+            showSuccess(`${file.name} (${fileSize} KB, ${pdf.numPages} pages)`);
+          });
+        },
+        function(error) {
+          console.error('PDF Error:', error);
+          showError('Could not read this PDF file. Please try another PDF file or paste your resume text instead.');
+          input.value = '';
         }
-        Promise.all(textPromises).then(pages => {
-          resumeText = pages.flatMap(content =>
-            content.items.map(item => item.str)
-          ).join(' ');
-          showSuccess(`${file.name} (${resumeFileSize} KB, ${pdf.numPages} pages)`);
-        });
-      }, (error) => {
-        showError('Could not read PDF. Please try another file.');
-        console.error('PDF Error:', error);
-      });
+      );
     };
     reader.readAsArrayBuffer(file);
   } else {
-    showError('Unsupported file format. Please upload PDF or TXT only.');
+    showError('❌ Unsupported file format. Please upload PDF or TXT only.');
     input.value = '';
-    resetResumeStatus();
   }
 }
 
+// ============================================
+// TEXTAREA PASTE HANDLER
+// ============================================
+document.getElementById('resumeTextarea').addEventListener('input', function(e) {
+  pastedResumeText = e.target.value.trim();
+  
+  // Update paste status
+  const pasteStatus = document.getElementById('pasteStatus');
+  if (pastedResumeText.length > 0) {
+    pasteStatus.innerHTML = `
+      <i class="fas fa-check-circle text-green-600"></i> 
+      <span class="text-green-700">${pastedResumeText.length} characters pasted</span>
+    `;
+  } else {
+    pasteStatus.innerHTML = '<i class="fas fa-info-circle"></i> Paste your resume text here';
+  }
+});
+
+// ============================================
+// STATUS MESSAGES
+// ============================================
 function showSuccess(info) {
   document.getElementById('resumeStatus').innerHTML = `
     <div class="flex items-center gap-2 text-green-700 bg-green-50 p-3 rounded-lg border-l-4 border-green-500">
@@ -120,7 +176,10 @@ function showError(message) {
   document.getElementById('resumeStatus').innerHTML = `
     <div class="flex items-center gap-2 text-red-700 bg-red-50 p-3 rounded-lg border-l-4 border-red-500">
       <i class="fas fa-exclamation-circle text-xl"></i>
-      <p class="font-semibold">${message}</p>
+      <div>
+        <p class="font-semibold">${message}</p>
+        <p class="text-xs mt-1">💡 Try switching to the "Paste Text" tab instead</p>
+      </div>
     </div>
   `;
   resumeText = null;
@@ -138,9 +197,12 @@ function resetResumeStatus() {
 function analyzeResume() {
   const jobDesc = document.getElementById('jobDesc').value.trim();
 
+  // Use uploaded file first, then pasted text
+  let localResumeText = resumeText || pastedResumeText || "";
+
   // Validation
-  if (!resumeText) {
-    alert('⚠️ Please upload your resume first!');
+  if (!localResumeText) {
+    alert('⚠️ Please upload your resume OR paste your resume text!');
     return;
   }
   if (!jobDesc) {
@@ -150,7 +212,7 @@ function analyzeResume() {
 
   // Extract skills
   const descLower = jobDesc.toLowerCase();
-  const resumeLower = resumeText.toLowerCase();
+  const resumeLower = localResumeText.toLowerCase();
 
   const allSkills = Object.values(TECH_KEYWORDS).flat();
 
@@ -264,9 +326,9 @@ function displayResults(result) {
         <!-- Progress Bar -->
         <div class="relative w-full h-16 bg-gray-200 rounded-full overflow-hidden border-2 border-gray-300 mb-6">
           <div 
-            class="h-full bg-gradient-to-r ${getColor(result.matchScore)} progress-animate flex items-center justify-center transition-all duration-1000"
-            style="width: 0%"
-            onload="this.style.width = '${result.matchScore}%'"
+            class="h-full bg-gradient-to-r ${getColor(result.matchScore)} progress-animate flex items-center justify-center"
+            style="width: 0%; transition: width 1s ease-out;"
+            id="progressBar"
           >
             <span class="text-white font-bold text-lg" style="display: ${result.matchScore > 15 ? 'block' : 'none'};">${result.matchScore}%</span>
           </div>
@@ -322,9 +384,9 @@ function displayResults(result) {
       <div class="bg-gradient-to-r from-purple-500 to-indigo-600 rounded-2xl shadow-2xl p-8 text-white">
         <h3 class="text-2xl font-bold mb-4"><i class="fas fa-rocket"></i> Next Steps</h3>
         <ul class="space-y-3 text-lg">
-          <li><i class="fas fa-check"></i> <strong>Update Your Resume:</strong> Add the missing skills if you have experience with them</li>
-          <li><i class="fas fa-check"></i> <strong>Highlight Matches:</strong> Emphasize the matched skills in your resume</li>
-          <li><i class="fas fa-check"></i> <strong>Apply Now:</strong> With these insights, you're ready to apply!</li>
+          <li><i class="fas fa-check"></i> <strong>Update Your Resume:</strong> Add missing skills if you have experience</li>
+          <li><i class="fas fa-check"></i> <strong>Highlight Matches:</strong> Emphasize the matched skills prominently</li>
+          <li><i class="fas fa-check"></i> <strong>Apply Now:</strong> With these insights, you're ready!</li>
           <li><i class="fas fa-check"></i> <strong>Upskill:</strong> If match is low, consider learning the missing technologies</li>
         </ul>
       </div>
@@ -336,7 +398,7 @@ function displayResults(result) {
   
   // Animate progress bar
   setTimeout(() => {
-    const progressBar = resultsSection.querySelector('[style*="width: 0%"]');
+    const progressBar = document.getElementById('progressBar');
     if (progressBar) {
       progressBar.style.width = `${result.matchScore}%`;
     }
