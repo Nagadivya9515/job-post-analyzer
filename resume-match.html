@@ -48,7 +48,7 @@
                     <i class="fas fa-arrow-left"></i> Job Analyzer
                 </a>
             </div>
-            <p class="text-purple-100">Upload your resume and compare it with job descriptions to see your match score</p>
+            <p class="text-purple-100">Upload or paste your resume and compare it with job descriptions</p>
         </div>
     </header>
 
@@ -62,26 +62,59 @@
                     <i class="fas fa-cog text-purple-600"></i> Resume Analysis Setup
                 </h2>
 
-                <!-- Resume Upload -->
-                <div class="mb-8">
-                    <label class="block text-lg font-semibold text-gray-700 mb-4">
-                        <i class="fas fa-file-pdf text-purple-600"></i> Upload Your Resume
-                    </label>
-                    <div class="relative border-3 border-dashed border-purple-300 rounded-xl p-8 text-center hover:border-purple-500 transition cursor-pointer bg-purple-50" id="dropZone">
-                        <input
-                            type="file"
-                            id="resumeInput"
-                            accept=".pdf,.txt,.docx"
-                            class="hidden"
-                            onchange="handleResumeUpload()"
-                        />
-                        <label for="resumeInput" class="cursor-pointer">
-                            <i class="fas fa-cloud-upload-alt text-5xl text-purple-400 mb-4 block"></i>
-                            <p class="text-lg font-semibold text-gray-700 mb-2">Drag & drop your resume or click to browse</p>
-                            <p class="text-sm text-gray-500">Supported formats: PDF, TXT</p>
+                <!-- RESUME SECTION: Upload or Paste -->
+                <div class="mb-8 space-y-4">
+                    <div>
+                        <label class="block text-lg font-semibold text-gray-700 mb-4">
+                            <i class="fas fa-file-pdf text-purple-600"></i> Your Resume
                         </label>
+                        <p class="text-sm text-gray-600 mb-3">Choose one method:</p>
                     </div>
-                    <div id="resumeStatus" class="mt-4 text-sm"></div>
+
+                    <!-- TAB BUTTONS -->
+                    <div class="flex gap-2 mb-4">
+                        <button onclick="switchResumeTab('upload')" 
+                                id="uploadTab"
+                                class="flex-1 py-2 px-4 rounded-lg font-semibold transition bg-purple-600 text-white">
+                            <i class="fas fa-cloud-upload-alt"></i> Upload File
+                        </button>
+                        <button onclick="switchResumeTab('paste')" 
+                                id="pasteTab"
+                                class="flex-1 py-2 px-4 rounded-lg font-semibold transition bg-gray-300 text-gray-700 hover:bg-gray-400">
+                            <i class="fas fa-paste"></i> Paste Text
+                        </button>
+                    </div>
+
+                    <!-- UPLOAD TAB -->
+                    <div id="uploadSection" class="space-y-3">
+                        <div class="relative border-3 border-dashed border-purple-300 rounded-xl p-8 text-center hover:border-purple-500 transition cursor-pointer bg-purple-50">
+                            <input
+                                type="file"
+                                id="resumeInput"
+                                accept=".pdf,.txt"
+                                class="hidden"
+                                onchange="handleResumeUpload()"
+                            />
+                            <label for="resumeInput" class="cursor-pointer">
+                                <i class="fas fa-cloud-upload-alt text-5xl text-purple-400 mb-4 block"></i>
+                                <p class="text-lg font-semibold text-gray-700 mb-2">Drag & drop or click to browse</p>
+                                <p class="text-sm text-gray-500">Supported: PDF, TXT</p>
+                            </label>
+                        </div>
+                        <div id="resumeStatus" class="text-sm"></div>
+                    </div>
+
+                    <!-- PASTE TAB -->
+                    <div id="pasteSection" class="hidden space-y-3">
+                        <textarea
+                            id="resumeTextarea"
+                            placeholder="Paste your complete resume text here (copy-paste from Word, PDF viewer, or any text source)..."
+                            class="w-full p-4 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none transition min-h-48 font-mono text-sm resize-none"
+                        ></textarea>
+                        <div id="pasteStatus" class="text-sm text-gray-600">
+                            <i class="fas fa-info-circle"></i> Paste any text from your resume
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Job Description Input -->
@@ -117,8 +150,8 @@
                             <span class="font-bold text-purple-600">1</span>
                         </div>
                         <div>
-                            <h4 class="font-semibold text-gray-800">Upload Your Resume</h4>
-                            <p class="text-sm text-gray-600">Upload a PDF or TXT file. Your resume is processed in your browser and never sent anywhere.</p>
+                            <h4 class="font-semibold text-gray-800">Upload or Paste Resume</h4>
+                            <p class="text-sm text-gray-600">Upload a PDF/TXT file OR paste your resume text directly. Whatever works for you!</p>
                         </div>
                     </div>
 
@@ -128,7 +161,7 @@
                         </div>
                         <div>
                             <h4 class="font-semibold text-gray-800">Paste Job Description</h4>
-                            <p class="text-sm text-gray-600">Copy and paste the full job description from the job posting.</p>
+                            <p class="text-sm text-gray-600">Copy and paste the job description from the job posting.</p>
                         </div>
                     </div>
 
@@ -138,7 +171,7 @@
                         </div>
                         <div>
                             <h4 class="font-semibold text-gray-800">Get Match Score</h4>
-                            <p class="text-sm text-gray-600">See which skills in the job description are present in your resume.</p>
+                            <p class="text-sm text-gray-600">See which skills in the job are present in your resume instantly.</p>
                         </div>
                     </div>
 
@@ -148,16 +181,26 @@
                         </div>
                         <div>
                             <h4 class="font-semibold text-gray-800">Improve Your Resume</h4>
-                            <p class="text-sm text-gray-600">Add missing skills to your resume to increase your match score.</p>
+                            <p class="text-sm text-gray-600">Add missing skills to increase your match score.</p>
                         </div>
                     </div>
                 </div>
 
+                <!-- Quick Tips -->
+                <div class="mt-8 p-4 bg-green-50 border-l-4 border-green-500 rounded">
+                    <p class="text-sm text-gray-700 font-semibold mb-2">💡 Pro Tips:</p>
+                    <ul class="text-sm text-gray-700 space-y-1">
+                        <li>✓ If PDF upload fails, just copy-paste your resume text</li>
+                        <li>✓ Make sure all your skills are mentioned in your resume</li>
+                        <li>✓ Use full skill names (e.g., "React" not just "react")</li>
+                    </ul>
+                </div>
+
                 <!-- Skills Database Info -->
-                <div class="mt-8 p-4 bg-purple-50 border-l-4 border-purple-500 rounded">
+                <div class="mt-4 p-4 bg-purple-50 border-l-4 border-purple-500 rounded">
                     <p class="text-sm text-gray-700">
                         <i class="fas fa-info-circle text-purple-600"></i>
-                        <strong>Skills Database:</strong> The analyzer recognizes 100+ technical skills across Backend, Frontend, Database, DevOps, Cloud, and Testing categories.
+                        <strong>Skills Database:</strong> Recognizes 100+ technical skills across Backend, Frontend, Database, DevOps, Cloud, and Testing.
                     </p>
                 </div>
             </div>
@@ -169,7 +212,7 @@
 
     <!-- Footer -->
     <footer class="bg-purple-900 text-purple-200 text-center py-6 mt-12">
-        <p>© 2024 Job Post Analyzer | Resume data is never stored or sent to any server</p>
+        <p>© 2024 Job Post Analyzer | Your resume data never leaves your browser</p>
     </footer>
 
     <script src="resume-logic.js"></script>
