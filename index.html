@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resume Matcher - Job Post Analyzer</title>
+    <title>Job Post Analyzer - With Resume Match</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- PDF.js for PDF extraction -->
+    <!-- PDF.js library for PDF text extraction -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.js"></script>
     <style>
         .fade-in {
@@ -14,6 +14,9 @@
         }
         .slide-up {
             animation: slideUp 0.5s ease-out;
+        }
+        .pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
         @keyframes fadeIn {
             from { opacity: 0; }
@@ -29,192 +32,182 @@
                 opacity: 1;
             }
         }
-        .progress-animate {
-            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        .active-history {
+            @apply ring-2 ring-blue-400 bg-blue-100 !important;
+        }
+        .resume-badge {
+            @apply inline-block bg-gradient-to-r from-purple-400 to-purple-600 text-white px-3 py-1 rounded-full text-sm font-semibold;
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 min-h-screen">
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen">
     
-    <!-- Header with Navigation -->
-    <header class="bg-gradient-to-r from-purple-600 to-indigo-600 shadow-lg">
-        <div class="max-w-5xl mx-auto px-4 py-8">
-            <div class="flex items-center justify-between mb-3">
-                <div class="flex items-center gap-3">
-                    <i class="fas fa-file-alt text-4xl text-white"></i>
-                    <h1 class="text-3xl font-bold text-white">Resume Matcher</h1>
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg">
+        <div class="max-w-6xl mx-auto px-4 py-8">
+            <div class="flex items-center gap-3 mb-2">
+                <i class="fas fa-briefcase text-4xl text-white"></i>
+                <div>
+                    <h1 class="text-4xl font-bold text-white">Job Post Analyzer</h1>
+                    <p class="text-blue-100 text-sm">Now with Resume Matching!</p>
                 </div>
             </div>
-            <a href="index.html" class="bg-white text-purple-600 px-4 py-2 rounded-lg font-bold hover:bg-purple-50 transition">
-                    <i class="fas fa-arrow-left"></i> Job Analyzer
-            </a>
-            <p class="text-purple-100">Upload or paste your resume and compare it with job descriptions</p>
+            <p class="text-blue-100">Analyze job posts, upload resume, and get instant matching scores.</p>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="max-w-5xl mx-auto px-4 py-12">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <main class="max-w-6xl mx-auto px-4 py-12">
+        <div class="absolute top-4 right-4">
+    <a href="resume-match.html" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition">
+        <i class="fas fa-file-alt"></i> Resume Matcher
+    </a>
+</div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            <!-- Input Section -->
-            <div class="bg-white rounded-2xl shadow-2xl p-8 slide-up">
-                <h2 class="text-2xl font-bold text-gray-800 mb-8">
-                    <i class="fas fa-cog text-purple-600"></i> Resume Analysis Setup
-                </h2>
-
-                <!-- RESUME SECTION: Upload or Paste -->
-                <div class="mb-8 space-y-4">
-                    <div>
-                        <label class="block text-lg font-semibold text-gray-700 mb-4">
-                            <i class="fas fa-file-pdf text-purple-600"></i> Your Resume
-                        </label>
-                        <p class="text-sm text-gray-600 mb-3">Choose one method:</p>
-                    </div>
-
-                    <!-- TAB BUTTONS -->
-                    <div class="flex gap-2 mb-4">
-                        <button onclick="switchResumeTab('upload')" 
-                                id="uploadTab"
-                                class="flex-1 py-2 px-4 rounded-lg font-semibold transition bg-purple-600 text-white">
-                            <i class="fas fa-cloud-upload-alt"></i> Upload File
-                        </button>
-                        <button onclick="switchResumeTab('paste')" 
-                                id="pasteTab"
-                                class="flex-1 py-2 px-4 rounded-lg font-semibold transition bg-gray-300 text-gray-700 hover:bg-gray-400">
-                            <i class="fas fa-paste"></i> Paste Text
-                        </button>
-                    </div>
-
-                    <!-- UPLOAD TAB -->
-                    <div id="uploadSection" class="space-y-3">
-                        <div class="relative border-3 border-dashed border-purple-300 rounded-xl p-8 text-center hover:border-purple-500 transition cursor-pointer bg-purple-50">
-                            <input
-                                type="file"
-                                id="resumeInput"
-                                accept=".pdf,.txt"
-                                class="hidden"
-                                onchange="handleResumeUpload()"
-                            />
-                            <label for="resumeInput" class="cursor-pointer">
-                                <i class="fas fa-cloud-upload-alt text-5xl text-purple-400 mb-4 block"></i>
-                                <p class="text-lg font-semibold text-gray-700 mb-2">Drag & drop or click to browse</p>
-                                <p class="text-sm text-gray-500">Supported: PDF, TXT</p>
+            <!-- Input Panel -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-xl shadow-xl p-8 slide-up">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">
+                        <i class="fas fa-plus-circle text-blue-600"></i> New Analysis
+                    </h2>
+                    
+                    <div class="space-y-6">
+                        
+                        <!-- Skills Input -->
+                        <div>
+                            <label class="block text-lg font-semibold text-gray-700 mb-3">
+                                Your Technical Skills
                             </label>
+                            <div id="skillsTags" class="flex flex-wrap gap-2 mb-4 min-h-12"></div>
+                            <div class="flex gap-2">
+                                <input
+                                    id="skillInput"
+                                    type="text"
+                                    placeholder="e.g., react, node.js, sql, docker"
+                                    class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition"
+                                />
+                                <button
+                                    onclick="addSkill()"
+                                    class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+                                >
+                                    <i class="fas fa-plus"></i> Add
+                                </button>
+                            </div>
+                            <p class="text-sm text-gray-500 mt-2">💡 Press Enter or click Add to add skill</p>
                         </div>
-                        <div id="resumeStatus" class="text-sm"></div>
-                    </div>
 
-                    <!-- PASTE TAB -->
-                    <div id="pasteSection" class="hidden space-y-3">
-                        <textarea
-                            id="resumeTextarea"
-                            placeholder="Paste your complete resume text here (copy-paste from Word, PDF viewer, or any text source)..."
-                            class="w-full p-4 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none transition min-h-48 font-mono text-sm resize-none"
-                        ></textarea>
-                        <div id="pasteStatus" class="text-sm text-gray-600">
-                            <i class="fas fa-info-circle"></i> Paste any text from your resume
+                        <!-- Resume Upload Section -->
+                        <div class="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg border-2 border-purple-200">
+                            <label class="block text-lg font-semibold text-gray-700 mb-3">
+                                <i class="fas fa-file-pdf text-purple-600"></i> Upload Your Resume (Optional)
+                            </label>
+                            <p class="text-sm text-gray-600 mb-3">Upload a PDF or TXT file to compare your resume with job requirements</p>
+                            
+                            <div class="relative">
+                                <input
+                                    type="file"
+                                    id="resumeInput"
+                                    accept=".pdf,.txt"
+                                    class="block w-full text-sm text-gray-900 border-2 border-dashed border-purple-300 rounded-lg cursor-pointer bg-white p-4 focus:outline-none focus:border-purple-500 transition"
+                                    onchange="handleResumeUpload()"
+                                />
+                            </div>
+                            
+                            <div id="resumeStatus" class="mt-3 flex items-center gap-2">
+                                <p id="resumeFileName" class="text-sm text-gray-600">
+                                    <i class="fas fa-info-circle text-blue-500"></i> No resume uploaded
+                                </p>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">
+                                <i class="fas fa-lightbulb"></i> Your resume file is processed locally in your browser and never sent to any server
+                            </p>
                         </div>
+
+                        <!-- Job Title Input -->
+                        <div>
+                            <label class="block text-lg font-semibold text-gray-700 mb-2">
+                                Job Title
+                            </label>
+                            <input
+                                id="jobTitle"
+                                type="text"
+                                placeholder="e.g., Full Stack Developer"
+                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition"
+                            />
+                        </div>
+
+                        <!-- Job Description Input -->
+                        <div>
+                            <label class="block text-lg font-semibold text-gray-700 mb-2">
+                                Job Description
+                            </label>
+                            <textarea
+                                id="jobDesc"
+                                placeholder="Paste the complete job description here..."
+                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition min-h-48 font-mono text-sm"
+                            ></textarea>
+                        </div>
+
+                        <!-- Analyze Button -->
+                        <button
+                            onclick="analyzeJob()"
+                            class="w-full py-4 text-lg font-bold rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg hover:scale-105 transition transform"
+                        >
+                            <i class="fas fa-search"></i> Analyze Job Post
+                        </button>
                     </div>
                 </div>
-
-                <!-- Job Description Input -->
-                <div>
-                    <label class="block text-lg font-semibold text-gray-700 mb-4">
-                        <i class="fas fa-briefcase text-purple-600"></i> Job Description
-                    </label>
-                    <textarea
-                        id="jobDesc"
-                        placeholder="Paste the job description here..."
-                        class="w-full p-4 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none transition min-h-64 font-mono text-sm resize-none"
-                    ></textarea>
-                </div>
-
-                <!-- Analyze Button -->
-                <button
-                    onclick="analyzeResume()"
-                    class="w-full mt-8 py-4 text-lg font-bold rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg hover:scale-105 transition transform"
-                >
-                    <i class="fas fa-bolt"></i> Analyze Resume Match
-                </button>
             </div>
 
-            <!-- Tips Section -->
-            <div class="bg-white rounded-2xl shadow-2xl p-8 slide-up">
-                <h3 class="text-2xl font-bold text-gray-800 mb-6">
-                    <i class="fas fa-lightbulb text-yellow-500"></i> How It Works
-                </h3>
-                
-                <div class="space-y-6">
-                    <div class="flex gap-4">
-                        <div class="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                            <span class="font-bold text-purple-600">1</span>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold text-gray-800">Upload or Paste Resume</h4>
-                            <p class="text-sm text-gray-600">Upload a PDF/TXT file OR paste your resume text directly. Whatever works for you!</p>
-                        </div>
+            <!-- History Panel -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-xl shadow-xl p-6 sticky top-4 slide-up">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">
+                        <i class="fas fa-history text-purple-600"></i> Recent Analyses
+                    </h3>
+                    
+                    <!-- Clear History Button -->
+                    <button 
+                        onclick="clearAllHistory()"
+                        class="w-full mb-4 text-sm bg-red-100 text-red-700 px-3 py-2 rounded hover:bg-red-200 transition"
+                    >
+                        <i class="fas fa-trash"></i> Clear All
+                    </button>
+
+                    <div id="historyPanel" class="space-y-3 max-h-96 overflow-y-auto">
+                        <p class="text-gray-500 text-center py-8">No analyses yet. Start analyzing!</p>
                     </div>
-
-                    <div class="flex gap-4">
-                        <div class="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                            <span class="font-bold text-purple-600">2</span>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold text-gray-800">Paste Job Description</h4>
-                            <p class="text-sm text-gray-600">Copy and paste the job description from the job posting.</p>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-4">
-                        <div class="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                            <span class="font-bold text-purple-600">3</span>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold text-gray-800">Get Match Score</h4>
-                            <p class="text-sm text-gray-600">See which skills in the job are present in your resume instantly.</p>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-4">
-                        <div class="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                            <span class="font-bold text-purple-600">4</span>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold text-gray-800">Improve Your Resume</h4>
-                            <p class="text-sm text-gray-600">Add missing skills to increase your match score.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Tips -->
-                <div class="mt-8 p-4 bg-green-50 border-l-4 border-green-500 rounded">
-                    <p class="text-sm text-gray-700 font-semibold mb-2">💡 Pro Tips:</p>
-                    <ul class="text-sm text-gray-700 space-y-1">
-                        <li>✓ If PDF upload fails, just copy-paste your resume text</li>
-                        <li>✓ Make sure all your skills are mentioned in your resume</li>
-                        <li>✓ Use full skill names (e.g., "React" not just "react")</li>
-                    </ul>
-                </div>
-
-                <!-- Skills Database Info -->
-                <div class="mt-4 p-4 bg-purple-50 border-l-4 border-purple-500 rounded">
-                    <p class="text-sm text-gray-700">
-                        <i class="fas fa-info-circle text-purple-600"></i>
-                        <strong>Skills Database:</strong> Recognizes 100+ technical skills across Backend, Frontend, Database, DevOps, Cloud, and Testing.
-                    </p>
                 </div>
             </div>
         </div>
 
-        <!-- Results Section -->
-        <div id="resultsSection" class="mt-12 hidden"></div>
+        <!-- Results Section (Dynamic) -->
+        <div id="resultsSection" class="mt-12 hidden space-y-6 fade-in"></div>
+
+        <!-- View Indicator -->
+        <div id="viewIndicator" class="mt-8 hidden text-center">
+            <p class="text-white text-sm bg-blue-600 px-4 py-2 rounded-lg inline-block">
+                <i class="fas fa-eye"></i> Viewing past analysis: <span id="viewingTitle" class="font-bold"></span>
+            </p>
+            <button 
+                onclick="resetView()"
+                class="ml-4 text-white bg-gray-600 px-4 py-2 rounded-lg hover:bg-gray-700 transition"
+            >
+                <i class="fas fa-times"></i> Close
+            </button>
+        </div>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-purple-900 text-purple-200 text-center py-6 mt-12">
-        <p>© 2024 Job Post Analyzer | Your resume data never leaves your browser</p>
+    <footer class="bg-gray-800 text-gray-400 text-center py-6 mt-12">
+        <p>© 2024 Job Post Analyzer | Made with <i class="fas fa-heart text-red-500"></i> by You | Resume matching powered by your browser</p>
     </footer>
 
-    <script src="resume-logic.js"></script>
+    <script src="logic.js"></script>
 </body>
 </html>
